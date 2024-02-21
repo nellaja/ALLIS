@@ -101,7 +101,47 @@ sleepy() {
     sleep $t
 }
 
-info_print "CPU is $cpu"
-sleepy 5
-input_print "Microcode is $microcode"
-error_print "Microcode Image is $microcode_img"
+
+# ------------------------------------------------------------------------------
+# Internet Connection Functions
+# ------------------------------------------------------------------------------
+
+# Exit the script if there is no internet connection
+not_connected() {
+    sleepy 2
+    
+    error_print "No network connection!!!  Exiting now."
+    sleepy 1
+    error_print "Your entire life has been a mathematical error."
+    exit 1
+}
+
+# Check for working internet connection
+check_connection() {
+    clear
+    
+    info_print "Trying to ping archlinux.org . . . ."
+    $(ping -c 3 archlinux.org &>/dev/null) ||  not_connected
+    sleepy 1
+
+    info_print "Connection good!"
+    sleepy 1
+    info_print "Well done, android."
+    sleepy 3
+}
+
+
+# ------------------------------------------------------------------------------
+# Begin Install
+# ------------------------------------------------------------------------------
+
+clear
+
+# Welcome message
+info_print "Hello and, again, welcome to the Aperture Science computer-aided enrichment center."
+sleepy 1
+info_print "Beginning Arch Linux installation . . . ."
+sleepy 3
+
+# Check for working internet connection; will exit script if there is no connection
+check_connection
