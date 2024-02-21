@@ -90,6 +90,18 @@ error_print () {
     echo -e "${BOLD}${BRED}[ ${BBLUE}•${BRED} ] $1${RESET}"
 }
 
+
+# ------------------------------------------------------------------------------
+# Sleep Time Function
+# -----------------------------------------------------------------------------y-
+
+# Sets sleep time to allow for pauses (or no pauses) during the script to let the user follow along
+sleepy() {
+    let "t = $1 * $rest"
+    sleep $t
+}
+
 info_print "CPU is $cpu"
+sleepy 5
 input_print "Microcode is $microcode"
 error_print "Microcode Image is $microcode_img"
