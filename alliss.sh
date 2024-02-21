@@ -45,4 +45,23 @@ hooks_new="HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vcon
 alsa_array=(snd_asihpi snd_cs46xx snd_darla20 snd_darla24 snd_echo3g snd_emu10k1 snd_gina20 snd_gina24 snd_hda_codec_ca0132 snd_hdsp snd_indigo snd_indigodj snd_indigodjx snd_indigoio snd_indigoiox snd_layla20 snd_layla24 snd_mia snd_mixart snd_mona snd_pcxhr snd_vx_lib)
 
 
-echo "This is a test"
+# ------------------------------------------------------------------------------
+# Variable Definitions - Auto Defined
+# ------------------------------------------------------------------------------
+
+# Determine the CPU manufacturer and assign corresponding microcode values
+cpu=$(lscpu | grep "Vendor ID:")
+
+if [[ "$cpu" == *"AuthenticAMD"* ]] ; then
+    cpu="AMD"
+    microcode="amd-ucode"
+    microcode_img="amd-ucode.img"
+else
+    cpu="Intel"
+    microcode="intel-ucode"
+    microcode_img="intel-ucode.img"
+fi
+
+echo "CPU is $cpu"
+echo "Microcode is $microcode"
+echo "Microcode Image is $microcode_img"
