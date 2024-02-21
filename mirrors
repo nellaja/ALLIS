@@ -1,0 +1,14 @@
+# https://archlinux.org/mirrors/status/tier/1/
+# Criteria:
+# 1. Mirror Score <= 1.2
+# 2. Protocol = https
+# 3. Completion % >= 99%
+# 4. Preffered Country list: US, Canada, Germany, UK, France
+
+# Grab top 5 mirrors
+
+Server = https://arch.mirror.constant.com/$repo/os/$arch
+Server = https://america.mirror.pkgbuild.com/$repo/os/$arch
+Server = https://iad.mirrors.misaka.one/archlinux/$repo/os/$arch
+Server = https://london.mirror.pkgbuild.com/$repo/os/$arch
+Server = https://de.arch.mirror.kescher.at/$repo/os/$arch
