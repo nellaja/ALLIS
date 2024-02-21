@@ -108,11 +108,12 @@ sleepy() {
 
 # Exit the script if there is no internet connection
 not_connected() {
-    sleepy 2
+    sleepy 1
     
     error_print "No network connection!!!  Exiting now."
     sleepy 1
     error_print "Your entire life has been a mathematical error."
+    sleepy 1
     exit 1
 }
 
@@ -122,12 +123,11 @@ check_connection() {
     
     info_print "Trying to ping archlinux.org . . . ."
     $(ping -c 3 archlinux.org &>/dev/null) ||  not_connected
-    sleepy 1
 
     info_print "Connection good!"
     sleepy 1
     info_print "Well done, android."
-    sleepy 3
+    sleepy 2
 }
 
 
@@ -172,17 +172,17 @@ user_input() {
     do
         case $gpu in
             AMD)
-                info_print "AMD graphics drivers will be installed by this script . . . ."
+                info_print "AMD graphics drivers will be installed . . . ."
                 sleepy 2
                 break
                 ;;
             Intel)
-                info_print "Intel graphics drivers will be installed by this script . . . ."
+                info_print "Intel graphics drivers will be installed . . . ."
                 sleepy 2
                 break
                 ;;
             *)
-                info_print "No graphics drivers will be installed by this script . . . ."
+                info_print "No graphics drivers will be installed . . . ."
                 sleepy 2
                 break
                 ;;
@@ -193,21 +193,21 @@ user_input() {
 
     # Input block device on which Arch will be installed
     info_print "The recognized block devices are as follows . . . ."
-    lsblk
-    sleepy 1
+    lsblk -d
+    sleepy 2
 
     while true ; do 
         input_print "Enter the name of the block device for the installation (sdX or nvmeYn1) . . . .  "
         read device
 
-        lsblk -l | grep -c "$device" | read count_device
+        lsblk -d | grep -c "$device" | read count_device
         if [ $count_device != "0" ] ; then
             info_print "Arch Linux will be installed on $device by this script . . . ."
             sleepy 2
             break 
         else
             error_print "$device does not appear to be a recognized block device; try again . . . ."
-            sleepy 2
+            sleepy 1
         fi
     done
 
@@ -257,6 +257,52 @@ terminal_init() {
 
 
 # ------------------------------------------------------------------------------
+# Partition Disk Function
+# ------------------------------------------------------------------------------
+
+# Partitions the device name selected by the user
+part_disk() {
+    clear
+    
+    info_print "Arch Linux will be installed on the following disk: $device"
+    sleepy 2
+    
+     # If $device is an nvme device, check status of its logical sector size
+    if [ "${device::4}" == "nvme" ] ; then
+        nvme id-ns -H /dev/nvmeYn1 | grep "Relative Performance"
+        input_print "Is the 'in use' format labeled as 'Best' [y/N]    "
+        read -r nvme_response
+        if ! [[ "${nvme_response,,}" =~ ^(yes|y)$ ]]; then
+            input_print "To format $device, enter the number shown after 'LBA Format' associated with 'Best' performance    "
+            read lba_number
+            nvme format --lbaf=$lba_number --force /dev/$device
+        fi
+    fi
+
+    input_print "This operation will wipe and delete $device  ....  Do you agree to proceed [y/N]   "
+    read -r disk_response
+    if ! [[ "${disk_response,,}" =~ ^(yes|y)$ ]] ; then
+        error_print "Quitting."
+        sleepy 1
+        error_print "Nice job breaking it. Hero."
+        exit
+    fi
+
+    info_print "Wiping $device . . . ."
+    #sgdisk -Z "/dev/$device"
+    #wipefs --all --force "/dev/$device"
+    sleepy 2
+
+    info_print "Partitioning $device . . . ."
+    #sgdisk -o "/dev/$device"
+   # sgdisk -n 0:0:+1G -t 0:ef00 "/dev/$device"
+    #sgdisk -n 0:0:0 -t 0:8304 "/dev/$device"
+    
+    sleepy 3
+}
+
+
+# ------------------------------------------------------------------------------
 # Begin Install
 # ------------------------------------------------------------------------------
 
@@ -266,7 +312,7 @@ clear
 info_print "Hello and, again, welcome to the Aperture Science computer-aided enrichment center."
 sleepy 2
 info_print "Beginning Arch Linux installation . . . ."
-sleepy 3
+sleepy 2
 
 # Check for working internet connection; will exit script if there is no connection
 check_connection
@@ -276,3 +322,6 @@ user_input
 
 # Initialize tty terminal and system clock
 terminal_init
+
+# Partition the disk
+part_disk
