@@ -46,6 +46,14 @@ alsa_array=(snd_asihpi snd_cs46xx snd_darla20 snd_darla24 snd_echo3g snd_emu10k1
 
 
 # ------------------------------------------------------------------------------
+# Variable Definitions - Imported From Cloned ALLIS Repository
+# ------------------------------------------------------------------------------
+
+# Mirror list import (file name will be "mirrors")
+curl -Os https://raw.githubusercontent.com/nellaja/ALLIS/main/mirrors
+
+
+# ------------------------------------------------------------------------------
 # Variable Definitions - Auto Defined
 # ------------------------------------------------------------------------------
 
@@ -202,7 +210,7 @@ user_input() {
 
         lsblk -d | grep -c "$device" | read count_device
         if [ $count_device != "0" ] ; then
-            info_print "Arch Linux will be installed on $device by this script . . . ."
+            info_print "Arch Linux will be installed on $device . . . ."
             sleepy 2
             break 
         else
@@ -233,7 +241,7 @@ user_input() {
     input_print "Enter a username for the main non-root user . . . .  "
     read username
 
-    sleepy 3
+    sleepy 1
 }
 
 
@@ -269,20 +277,24 @@ part_disk() {
     
      # If $device is an nvme device, check status of its logical sector size
     if [ "${device::4}" == "nvme" ] ; then
-        nvme id-ns -H /dev/nvmeYn1 | grep "Relative Performance"
-        input_print "Is the 'in use' format labeled as 'Best' [y/N]    "
+        input_print "Checking available logical sector size options for $device . . . ."
+        nvme id-ns -H "/dev/$device" | grep "Relative Performance"
+        input_print "Is the 'in use' format labeled as 'Best' [y/N] . . . .  "
         read -r nvme_response
         if ! [[ "${nvme_response,,}" =~ ^(yes|y)$ ]]; then
             input_print "To format $device, enter the number shown after 'LBA Format' associated with 'Best' performance    "
             read lba_number
-            nvme format --lbaf=$lba_number --force /dev/$device
+            input_print "Formatting $device to new logical sector size . . . ."
+            nvme format --lbaf="$lba_number" --force "/dev/$device"
         fi
     fi
 
-    input_print "This operation will wipe and delete $device  ....  Do you agree to proceed [y/N]   "
+    clear
+
+    input_print "This operation will wipe and delete $device.  Do you agree to proceed [y/N] . . . .  "
     read -r disk_response
     if ! [[ "${disk_response,,}" =~ ^(yes|y)$ ]] ; then
-        error_print "Quitting."
+        error_print "Quitting . . . ."
         sleepy 1
         error_print "Nice job breaking it. Hero."
         exit
@@ -295,9 +307,34 @@ part_disk() {
 
     info_print "Partitioning $device . . . ."
     #sgdisk -o "/dev/$device"
-   # sgdisk -n 0:0:+1G -t 0:ef00 "/dev/$device"
+    #sgdisk -n 0:0:+1G -t 0:ef00 "/dev/$device"
     #sgdisk -n 0:0:0 -t 0:8304 "/dev/$device"
     
+    sleepy 3
+}
+
+
+# ------------------------------------------------------------------------------
+# Format & Mount Partitions Function
+# ------------------------------------------------------------------------------i
+
+# Formats the partitions and mounts them
+format_mount() {
+    clear
+    
+    # Format the partitions
+    info_print "Formatting the root partition as ext4 . . . ."
+    #mkfs.ext4 -FF "/dev/$rootdev"
+    sleepy 2
+
+    info_print "Formatting the boot partition as fat32 . . . ."
+    #mkfs.fat -F 32 "/dev/$bootdev"
+    sleepy 2
+
+    # Mount the partitions
+    info_print "Mounting the boot and root partitions . . . ."
+    #mount "/dev/$rootdev" /mnt
+    #mount --mkdir "/dev/$bootdev" /mnt/boot
     sleepy 3
 }
 
@@ -325,3 +362,13 @@ terminal_init
 
 # Partition the disk
 part_disk
+
+# Format and mount the partitions
+format_mount
+
+# Update mirrorlist
+info_print "Updating mirrorlist . . . ."
+cp mirrors /etc/pacman.d/mirrorlist
+sleepy 3
+
+
