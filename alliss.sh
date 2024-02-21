@@ -132,6 +132,104 @@ check_connection() {
 
 
 # ------------------------------------------------------------------------------
+# User Input Functions
+# ------------------------------------------------------------------------------
+
+# User input function for selection of terminal font and gpu manufacturer
+
+user_input() {
+    clear
+
+    # Set terminal font size
+    info_print "Setting the default font to $font . . . ."
+    setfont "$font"
+    sleepy 1
+
+    input_print "If default $font is too big or too small, select a new size (sorted smallest to biggest); select DONE when finished . . . ."
+    select font_sel in ter-118b ter-120b ter-122b ter-124b ter-126b ter-128b ter-130b ter-132b DONE ;
+    do
+        case $font_sel in
+            DONE)
+                info_print "$font font has been selected and set . . . ."
+                sleepy 2
+                break
+                ;;
+            *)
+                font="$font_Sel"
+                info_print "Setting the font to $font . . . ."
+                setfont "$font"
+                sleepy 2
+                info_print "Select different font size or select DONE to complete selection of $font . . . ."
+                ;;
+        esac
+    done
+
+    # Input GPU manufacturer (nvidia not supported)
+    input_print "Select the manufacturer of your GPU . . . ."
+    select gpu in AMD Intel SKIP ;
+    do
+        case $gpu in
+            AMD)
+                info_print "AMD graphics drivers will be installed by this script . . . ."
+                sleepy 2
+                break
+                ;;
+            Intel)
+                info_print "Intel graphics drivers will be installed by this script . . . ."
+                sleepy 2
+                break
+                ;;
+            *)
+                info_print "No graphics drivers will be installed by this script . . . ."
+                sleepy 2
+                break
+                ;;
+        esac
+    done
+
+    # Input block device on which Arch will be installed
+    info_print "The recognized block devices are as follows . . . ."
+    lsblk
+    sleepy 1
+
+    while true ; do 
+        input_print "Enter the name of the block device for the installation (sdX or nvmeYn1) . . . ."
+        read device
+
+        lsblk -l | grep -c "$device" | read count_device
+        if [ $count_device != "0" ] ; then
+            info_print "Arch Linux will be installed on $device by this script . . . ."
+            sleepy 2
+            break 
+        else
+            error_print "$device does not appear to be a recognized block device; try again . . . ."
+            sleepy 2
+        fi
+    done
+
+    # Define the partition numbers for boot and root partitions based on the provided device name
+    if [ "${device::4}" == "nvme" ] ; then
+        bootdev="${device}p1"
+        rootdev="${device}p2"
+    else
+        bootdev="${device}1"
+        rootdev="${device}2"
+    fi
+
+    # Enter hostname for the computer
+    input_print "Enter a hostname for this computer . . . ."
+    read hostname
+    sleepy 1
+
+    # Enter main user name
+    input_print "Enter a username for the main non-root user . . . ."
+    read username
+
+    sleepy 3
+}
+
+
+# ------------------------------------------------------------------------------
 # Begin Install
 # ------------------------------------------------------------------------------
 
@@ -139,9 +237,12 @@ clear
 
 # Welcome message
 info_print "Hello and, again, welcome to the Aperture Science computer-aided enrichment center."
-sleepy 1
+sleepy 2
 info_print "Beginning Arch Linux installation . . . ."
 sleepy 3
 
 # Check for working internet connection; will exit script if there is no connection
 check_connection
+
+# Obtain user input
+user_input
