@@ -62,6 +62,34 @@ else
     microcode_img="intel-ucode.img"
 fi
 
-echo "CPU is $cpu"
-echo "Microcode is $microcode"
-echo "Microcode Image is $microcode_img"
+
+# ------------------------------------------------------------------------------
+# Pretty Print Functions
+# ------------------------------------------------------------------------------
+
+# Cosmetics (colours for text in the pretty print functions)
+BOLD='\e[1m'
+BRED='\e[91m'
+BBLUE='\e[34m'  
+BGREEN='\e[92m'
+BYELLOW='\e[93m'
+RESET='\e[0m'
+
+# Pretty print for general information
+info_print () {
+    echo -e "${BOLD}${BGREEN}[ ${BYELLOW}•${BGREEN} ] $1${RESET}"
+}
+
+# Pretty print for user input
+input_print () {
+    echo -ne "${BOLD}${BYELLOW}[ ${BGREEN}•${BYELLOW} ] $1${RESET}"
+}
+
+# Pretty print to alert user of bad input
+error_print () {
+    echo -e "${BOLD}${BRED}[ ${BBLUE}•${BRED} ] $1${RESET}"
+}
+
+info_print "CPU is $cpu"
+input_print "Microcode is $microcode"
+error_print "Microcode Image is $microcode_img"
