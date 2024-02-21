@@ -145,8 +145,8 @@ user_input() {
     setfont "$font"
     sleepy 1
 
-    input_print "If default $font is too big or too small, select a new size (sorted smallest to biggest); select DONE when finished . . . ."
-    select font_sel in ter-118b ter-120b ter-122b ter-124b ter-126b ter-128b ter-130b ter-132b DONE ;
+    info_print "If default $font is too big or too small, select a new size (sorted smallest to biggest); select DONE when finished . . . ."
+    select font_sel in ter-118b ter-120b ter-122b ter-124b ter-128b ter-132b DONE ;
     do
         case $font_sel in
             DONE)
@@ -155,17 +155,19 @@ user_input() {
                 break
                 ;;
             *)
-                font="$font_Sel"
+                font="$font_sel"
                 info_print "Setting the font to $font . . . ."
                 setfont "$font"
-                sleepy 2
+                sleepy 1
                 info_print "Select different font size or select DONE to complete selection of $font . . . ."
                 ;;
         esac
     done
 
+    clear
+    
     # Input GPU manufacturer (nvidia not supported)
-    input_print "Select the manufacturer of your GPU . . . ."
+    info_print "Select the manufacturer of your GPU . . . ."
     select gpu in AMD Intel SKIP ;
     do
         case $gpu in
@@ -187,13 +189,15 @@ user_input() {
         esac
     done
 
+    clear
+
     # Input block device on which Arch will be installed
     info_print "The recognized block devices are as follows . . . ."
     lsblk
     sleepy 1
 
     while true ; do 
-        input_print "Enter the name of the block device for the installation (sdX or nvmeYn1) . . . ."
+        input_print "Enter the name of the block device for the installation (sdX or nvmeYn1) . . . .  "
         read device
 
         lsblk -l | grep -c "$device" | read count_device
@@ -216,15 +220,38 @@ user_input() {
         rootdev="${device}2"
     fi
 
+    clear
+
     # Enter hostname for the computer
-    input_print "Enter a hostname for this computer . . . ."
+    input_print "Enter a hostname for this computer . . . .  "
     read hostname
     sleepy 1
 
+    clear
+
     # Enter main user name
-    input_print "Enter a username for the main non-root user . . . ."
+    input_print "Enter a username for the main non-root user . . . .  "
     read username
 
+    sleepy 3
+}
+
+
+# ------------------------------------------------------------------------------
+# Terminal Initialization Function
+# ------------------------------------------------------------------------------
+
+# Initializes the console keymap (user defined variables) and the system time
+terminal_init() {
+    clear
+    
+    info_print "Changing console keyboard layout to $keymap . . . ."
+    loadkeys "$keymap"
+    sleepy 2
+      
+    info_print "Configuring system date and time . . . ."
+    timedatectl set-ntp true
+    
     sleepy 3
 }
 
@@ -246,3 +273,6 @@ check_connection
 
 # Obtain user input
 user_input
+
+# Initialize tty terminal and system clock
+terminal_init
