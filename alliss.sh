@@ -120,7 +120,7 @@ error_print () {
 
 # ------------------------------------------------------------------------------
 # Sleep Time Function
-# -----------------------------------------------------------------------------y-
+# ------------------------------------------------------------------------------
 
 # Sets sleep time to allow for pauses (or no pauses) during the script to let the user follow along
 sleepy() {
@@ -194,7 +194,9 @@ user_input() {
     clear
     
     # Input GPU manufacturer (nvidia not supported)
-    info_print "Select the manufacturer of your GPU . . . ."
+    info_print "This computer appears to use the following GPU . . . ."
+    sleepy 1
+    info_print "Please, select the manufacturer of your GPU (or skip to install graphics drivers manually) . . . ."
     select gpu in AMD Intel SKIP ;
     do
         case $gpu in
