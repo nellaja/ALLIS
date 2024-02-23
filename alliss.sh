@@ -120,7 +120,7 @@ error_print () {
 
 # Sets sleep time to allow for pauses (or no pauses) during the script to let the user follow along
 sleepy() {
-    let "t = $1 * $rest"
+    (( t = $1 * rest )) || true
     sleep $t
 }
 
@@ -145,7 +145,7 @@ check_connection() {
     clear
     
     info_print "Trying to ping archlinux.org . . . ."
-    $(ping -c 3 archlinux.org &>/dev/null) || not_connected
+    ping -c 3 archlinux.org &>/dev/null || not_connected
 
     info_print "Connection good!"
     sleepy 1
@@ -227,10 +227,10 @@ user_input() {
 
     while true ; do 
         input_print "Enter the name of the block device for the installation (sdX or nvmeYn1) . . . .  "
-        read device
+        read -r device
 
-        lsblk -d | grep -c "$device" | read count_device
-        if [ $count_device != "0" ] ; then
+        lsblk -d | grep -c "$device" | read -r count_device
+        if [ "$count_device" != "0" ] ; then
             info_print "Arch Linux will be installed on $device . . . ."
             sleepy 2
             break 
@@ -253,15 +253,14 @@ user_input() {
 
     # Enter hostname for the computer
     input_print "Enter a hostname for this computer . . . .  "
-    read hostname
+    read -r hostname
     sleepy 1
 
     clear
 
     # Enter main user name
     input_print "Enter a username for the main non-root user . . . .  "
-    read username
-
+    read -r username
     sleepy 1
 }
 
@@ -304,7 +303,7 @@ part_disk() {
         read -r nvme_response
         if ! [[ "${nvme_response,,}" =~ ^(yes|y)$ ]]; then
             input_print "To format $device, enter the number shown after 'LBA Format' associated with 'Best' performance    "
-            read lba_number
+            read -r lba_number
             info_print "Formatting $device to new logical sector size . . . ."
             nvme format --lbaf="$lba_number" --force "/dev/$device"
         fi
@@ -561,8 +560,8 @@ install_display() {
 install_audio() {
     clear
     
-    awk '{print $1}' /proc/modules | grep -c snd_sof | read count_mod
-    if [ $count_mod != "0" ] ; then 
+    awk '{print $1}' /proc/modules | grep -c snd_sof | read -r count_mod
+    if [ "$count_mod" != "0" ] ; then 
         info_print "The sof-firmware package is required for your system. Installing now . . . ."
         sleepy 1
         arch-chroot /mnt pacman -S --needed --noconfirm sof-firmware
@@ -570,8 +569,8 @@ install_audio() {
     sleepy 2
 
     for x in "${alsa_array[@]}" ; do
-        awk '{print $1}' /proc/modules | grep -c "$x" | read count_mod2
-        if [ $count_mod2 != "0" ] ; then
+        awk '{print $1}' /proc/modules | grep -c "$x" | read -r count_mod2
+        if [ "$count_mod2" != "0" ] ; then
             info_print "The alsa-firmware package is required for your system. Installing now . . . ."
             sleepy 1
             arch-chroot /mnt pacman -S --needed --noconfirm alsa-firmware
@@ -702,7 +701,7 @@ enable_services() {
     sleepy 2
 
     info_print "Enabling pipewire services . . . ."
-    arch-chroot /mnt systemctl --user -M $username@ enable pipewire.socket pipewire-pulse.socket wireplumber
+    arch-chroot /mnt systemctl --user -M "$username"@ enable pipewire.socket pipewire-pulse.socket wireplumber
     sleepy 2
 }
 
