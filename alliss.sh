@@ -37,8 +37,8 @@ arch_services=(avahi-daemon bluetooth cups firewalld ly systemd-boot-update syst
 arch_timers=(archlinux-keyring-wkd-sync.timer fstrim.timer logrotate.timer)
 
 # mkinitcpio hooks
-hooks_old="HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)"
-hooks_new="HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block filesystems fsck)"
+hooks_old="HOOKS=(base udev autodetect modconf kms keyboard keymap consolefont block filesystems fsck)"
+hooks_new="HOOKS=(base systemd autodetect modconf kms keyboard sd-vconsole block filesystems fsck)"
 
 # Array of modules to check if they exist on the system to determine if alsa-firmware package is required
 alsa_array=(snd_asihpi snd_cs46xx snd_darla20 snd_darla24 snd_echo3g snd_emu10k1 snd_gina20 snd_gina24 snd_hda_codec_ca0132 snd_hdsp snd_indigo snd_indigodj snd_indigodjx snd_indigoio snd_indigoiox snd_layla20 snd_layla24 snd_mia snd_mixart snd_mona snd_pcxhr snd_vx_lib)
@@ -305,7 +305,9 @@ part_disk() {
             input_print "To format $device, enter the number shown after 'LBA Format' associated with 'Best' performance    "
             read -r lba_number
             info_print "Formatting $device to new logical sector size . . . ."
+            sleepy 1
             nvme format --lbaf="$lba_number" --force "/dev/$device"
+            sleepy 3
         fi
     fi
 
@@ -480,7 +482,7 @@ title Arch Linux
 linux /vmlinuz-linux
 initrd /$microcode_img
 initrd /initramfs-linux.img
-options zswap.enabled=0 rw quiet
+options rootfstype=ext4 zswap.enabled=0 rw quiet
 EOF
 
 cat > /mnt/boot/loader/entries/arch-linux-fallback.conf <<EOF
@@ -488,7 +490,7 @@ title Arch Linux (fallback)
 linux /vmlinuz-linux
 initrd /$microcode_img
 initrd /initramfs-linux-fallback.img
-options zswap.enabled=0 rw quiet
+options rootfstype=ext4 zswap.enabled=0 rw quiet
 EOF
 
 cat > /mnt/boot/loader/entries/arch-linux-lts.conf <<EOF
@@ -496,7 +498,7 @@ title Arch Linux LTS
 linux /vmlinuz-linux-lts
 initrd /$microcode_img
 initrd /initramfs-linux-lts.img
-options zswap.enabled=0 rw quiet
+options rootfstype=ext4 zswap.enabled=0 rw quiet
 EOF
 
     sleepy 3
@@ -692,6 +694,11 @@ main_user() {
 enable_services() {
     clear
 
+    arch-chroot /mnt systemctl daemon-reload
+
+    info_print "Starting zram service . . . ."
+    arch-chroot /mnt systemctl start /dev/zram0
+
     info_print "Enabling system services . . . ."
     arch-chroot /mnt systemctl enable "${arch_services[@]}"
     sleepy 2
@@ -769,9 +776,6 @@ info_print "Due to pacman config changes, completing a full system update . . . 
 sleepy 2
 arch-chroot /mnt pacman -Syyu --noconfirm
 sleepy 3
-
-# Check package integrity
-check_pkgs
 
 # Install font packages
 clear
