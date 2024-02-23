@@ -17,7 +17,6 @@ keymap="us"                    # Console keymap setting (localectl list-keymaps)
 font="ter-128b"                # Console font (ls -a /usr/share/kbd/consolefonts)
 timezone="America/New_York"    # Location timezone
 locale="en_US.UTF-8"           # Locale and language variable
-aurhelper="paru"               # AUR helper
 
 # Base system package group
 base_system=(base base-devel linux linux-lts linux-firmware vim terminus-font git networkmanager)
@@ -68,9 +67,6 @@ mapfile -t sway_pkgs < sway_pkg
 curl -Os https://raw.githubusercontent.com/nellaja/ALLIS/main/extras_pkg
 mapfile -t extras_pkgs < extras_pkg
 
-# AUR package group (imports from aur_pkg file)
-curl -Os https://raw.githubusercontent.com/nellaja/ALLIS/main/aur_pkg
-mapfile -t aur_pkgs < aur_pkg
 
 # ------------------------------------------------------------------------------
 # Variable Definitions - Auto Defined
@@ -149,7 +145,7 @@ check_connection() {
     clear
     
     info_print "Trying to ping archlinux.org . . . ."
-    $(ping -c 3 archlinux.org &>/dev/null) ||  not_connected
+    $(ping -c 3 archlinux.org &>/dev/null) || not_connected
 
     info_print "Connection good!"
     sleepy 1
@@ -196,7 +192,10 @@ user_input() {
     # Input GPU manufacturer (nvidia not supported)
     info_print "This computer appears to use the following GPU . . . ."
     sleepy 1
+    lspci | grep VGA 
+    sleepy 1
     info_print "Please, select the manufacturer of your GPU (or skip to install graphics drivers manually) . . . ."
+    sleepy 1
     select gpu in AMD Intel SKIP ;
     do
         case $gpu in
@@ -222,8 +221,9 @@ user_input() {
 
     # Input block device on which Arch will be installed
     info_print "The recognized block devices are as follows . . . ."
+    sleepy 1
     lsblk -d
-    sleepy 2
+    sleepy 1
 
     while true ; do 
         input_print "Enter the name of the block device for the installation (sdX or nvmeYn1) . . . .  "
@@ -537,7 +537,7 @@ install_display() {
     if [ "$gpu" == "AMD" ] ; then
         info_print "Installing display drivers for an AMD GPU . . . ."
         sleepy 2
-        arch-chroot /mnt pacman -S --needed --noconfirm "${amd_graphics[@]}" 
+        arch-chroot /mnt pacman -S --needed --noconfirm "${amd_graphics[@]}"     
         arch-chroot /mnt pacman -S --needed --noconfirm "${amd_graphics_multilib[@]}"
     elif [ "$gpu" == "Intel" ] ; then
         info_print "Installing display drivers for an Intel GPU . . . ."
@@ -585,29 +585,6 @@ install_audio() {
     sleepy 2
     arch-chroot /mnt  pacman -S --needed --noconfirm "${pipewire_pkgs[@]}"
     sleepy 3
-}
-
-
-# ------------------------------------------------------------------------------
-# AUR Helper Installation Function
-# ------------------------------------------------------------------------------
-
-# Installs the preferred AUR Helper
-install_aur() {
-    clear
-
-    info_print "Installing AUR helper ($aurhelper) . . . ."
-    arch-chroot /mnt git clone "https://aur.archlinux.org/$aurhelper-bin.git"
-    arch-chroot /mnt/"$aurhelper-bin" makepkg --noconfirm -si
-    arch-chroot /mnt rm -rf "$aurhelper-bin"     
-    sleepy 3
-
-    clear
-    
-    info_print "Installing AUR packages . . . ."
-    sleepy 2
-    arch-chroot /mnt "$aurhelper" -S --needed --noconfirm "${aur_pkgs[@]}"
-    sleepy 3     
 }
 
 
@@ -794,6 +771,9 @@ sleepy 2
 arch-chroot /mnt pacman -Syyu --noconfirm
 sleepy 3
 
+# Check package integrity
+check_pkgs
+
 # Install font packages
 clear
 info_print "Installing fonts . . . ."
@@ -827,11 +807,6 @@ info_print "Installing extra, user-preferred packages . . . ."
 sleepy 2
 arch-chroot /mnt pacman -S --needed --noconfirm "${extras_pkgs[@]}"
 sleepy 3
-
-# Install AUR Helper and AUR packages
-if [ -n "$aurhelper" ] ; then
-    install_aur
-fi
 
 # zram configuration
 zram_config
