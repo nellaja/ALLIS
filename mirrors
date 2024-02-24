@@ -3,7 +3,7 @@
 # 1. Mirror Score <= 1.2
 # 2. Protocol = https
 # 3. Completion % >= 99%
-# 4. Preffered Country list: US, Canada, Germany, UK, France
+# 4. Preferred Country list: US, Canada, Germany, UK, France
 
 # Grab top 5 mirrors
 
