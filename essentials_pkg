@@ -16,6 +16,7 @@ fd
 firewalld
 fish
 fzf
+github-cli
 git-delta
 glances
 jq
