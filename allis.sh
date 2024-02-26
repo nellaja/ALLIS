@@ -17,7 +17,6 @@ keymap="us"                    # Console keymap setting (localectl list-keymaps)
 font="ter-128b"                # Console font (ls -a /usr/share/kbd/consolefonts)
 timezone="America/New_York"    # Location timezone
 locale="en_US.UTF-8"           # Locale and language variable
-aurhelper="paru"               # AUR helper
 
 # Base system package group
 base_system=(base base-devel linux linux-lts linux-firmware vim terminus-font git networkmanager)
@@ -34,12 +33,12 @@ intel_graphics_multilib=(lib32-mesa lib32-vulkan-intel lib32-vulkan-icd-loader)
 pipewire_pkgs=(pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber gst-plugin-pipewire libpulse)
 
 # List of services and timers that need to be enabled
-arch_services=(avahi-daemon bluetooth cups firewalld ly systemd-boot-update systemd-timesyncd)
+arch_services=(avahi-daemon bluetooth cups firewalld systemd-boot-update systemd-timesyncd)
 arch_timers=(archlinux-keyring-wkd-sync.timer fstrim.timer logrotate.timer)
 
 # mkinitcpio hooks
-hooks_old="HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)"
-hooks_new="HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block filesystems fsck)"
+hooks_old="HOOKS=(base udev autodetect modconf kms keyboard keymap consolefont block filesystems fsck)"
+hooks_new="HOOKS=(base systemd autodetect modconf kms keyboard sd-vconsole block filesystems fsck)"
 
 # Array of modules to check if they exist on the system to determine if alsa-firmware package is required
 alsa_array=(snd_asihpi snd_cs46xx snd_darla20 snd_darla24 snd_echo3g snd_emu10k1 snd_gina20 snd_gina24 snd_hda_codec_ca0132 snd_hdsp snd_indigo snd_indigodj snd_indigodjx snd_indigoio snd_indigoiox snd_layla20 snd_layla24 snd_mia snd_mixart snd_mona snd_pcxhr snd_vx_lib)
@@ -49,28 +48,24 @@ alsa_array=(snd_asihpi snd_cs46xx snd_darla20 snd_darla24 snd_echo3g snd_emu10k1
 # Variable Definitions - Imported From Cloned ALLIS Repository
 # ------------------------------------------------------------------------------
 
-# Mirror list
-curl -O -s https://raw.githubusercontent.com/nellaja/ALLI/main/mirrors
+# Mirror list import (file name will be "mirrors")
+curl -Os https://raw.githubusercontent.com/nellaja/ALLIS/main/mirrors
 
 # Font package group (imports from fonts_pkg)
-curl -O -s https://raw.githubusercontent.com/nellaja/ALLI/main/fonts_pkg
+curl -Os https://raw.githubusercontent.com/nellaja/ALLIS/main/fonts_pkg
 mapfile -t fonts_pkgs < fonts_pkg
 
 # Essentials package group (imports from essentials_pkg file)
-curl -O -s https://raw.githubusercontent.com/nellaja/ALLI/main/essentials_pkg
+curl -Os https://raw.githubusercontent.com/nellaja/ALLIS/main/essentials_pkg
 mapfile -t essentials_pkgs < essentials_pkg
 
 # Sway package group (imports from sway_pkg file)
-curl -O -s https://raw.githubusercontent.com/nellaja/ALLI/main/sway_pkg
+curl -Os https://raw.githubusercontent.com/nellaja/ALLIS/main/sway_pkg
 mapfile -t sway_pkgs < sway_pkg
 
 # Extras package group (imports from extras_pkg file)
-curl -O -s https://raw.githubusercontent.com/nellaja/ALLI/main/extras_pkg
+curl -Os https://raw.githubusercontent.com/nellaja/ALLIS/main/extras_pkg
 mapfile -t extras_pkgs < extras_pkg
-
-# AUR package group (imports from aur_pkg file)
-curl -O -s https://raw.githubusercontent.com/nellaja/ALLI/main/aur_pkg
-mapfile -t aur_pkgs < aur_pkg
 
 
 # ------------------------------------------------------------------------------
@@ -121,23 +116,12 @@ error_print () {
 
 # ------------------------------------------------------------------------------
 # Sleep Time Function
-# -----------------------------------------------------------------------------y-
+# ------------------------------------------------------------------------------
 
 # Sets sleep time to allow for pauses (or no pauses) during the script to let the user follow along
 sleepy() {
-    let "t = $1 * $rest"
+    (( t = $1 * rest )) || true
     sleep $t
-}
-
-
-# ------------------------------------------------------------------------------
-# Debugging Pause Function
-# -----------------------------------------------------------------------------y-
-
-# Sets sleep time to allow for pauses (or no pauses) during the script to let the user follow along
-pause() {
-    input_print "Paused for debugging. Hit any key to continue . . . ."
-    read throwaway
 }
 
 
@@ -147,11 +131,12 @@ pause() {
 
 # Exit the script if there is no internet connection
 not_connected() {
-    sleepy 2
+    sleepy 1
     
     error_print "No network connection!!!  Exiting now."
     sleepy 1
     error_print "Your entire life has been a mathematical error."
+    sleepy 1
     exit 1
 }
 
@@ -160,12 +145,12 @@ check_connection() {
     clear
     
     info_print "Trying to ping archlinux.org . . . ."
-    $(ping -c 3 archlinux.org &>/dev/null) ||  not_connected
-    sleepy 1
+    ping -c 3 archlinux.org &>/dev/null || not_connected
 
     info_print "Connection good!"
     sleepy 1
-    info_print "Well done, android." && sleepy 3
+    info_print "Well done, android."
+    sleepy 2
 }
 
 
@@ -183,8 +168,8 @@ user_input() {
     setfont "$font"
     sleepy 1
 
-    input_print "If default $font is too big or too small, select a new size (sorted smallest to biggest); select DONE when finished . . . ."
-    select font_sel in ter-118b ter-120b ter-122b ter-124b ter-126b ter-128b ter-130b ter-132b DONE ;
+    info_print "If default $font is too big or too small, select a new size (sorted smallest to biggest); select DONE when finished . . . ."
+    select font_sel in ter-118b ter-120b ter-122b ter-124b ter-128b ter-132b DONE ;
     do
         case $font_sel in
             DONE)
@@ -193,55 +178,65 @@ user_input() {
                 break
                 ;;
             *)
-                font="$font_Sel"
+                font="$font_sel"
                 info_print "Setting the font to $font . . . ."
                 setfont "$font"
-                sleepy 2
+                sleepy 1
                 info_print "Select different font size or select DONE to complete selection of $font . . . ."
                 ;;
         esac
     done
 
+    clear
+    
     # Input GPU manufacturer (nvidia not supported)
-    input_print "Select the manufacturer of your GPU . . . ."
+    info_print "This computer appears to use the following GPU . . . ."
+    sleepy 1
+    lspci | grep VGA 
+    sleepy 1
+    info_print "Please, select the manufacturer of your GPU (or skip to install graphics drivers manually) . . . ."
+    sleepy 1
     select gpu in AMD Intel SKIP ;
     do
         case $gpu in
             AMD)
-                info_print "AMD graphics drivers will be installed by this script . . . ."
+                info_print "AMD graphics drivers will be installed . . . ."
                 sleepy 2
                 break
                 ;;
             Intel)
-                info_print "Intel graphics drivers will be installed by this script . . . ."
+                info_print "Intel graphics drivers will be installed . . . ."
                 sleepy 2
                 break
                 ;;
             *)
-                info_print "No graphics drivers will be installed by this script . . . ."
+                info_print "No graphics drivers will be installed . . . ."
                 sleepy 2
                 break
                 ;;
         esac
     done
 
+    clear
+
     # Input block device on which Arch will be installed
     info_print "The recognized block devices are as follows . . . ."
-    lsblk
+    sleepy 1
+    lsblk -d
     sleepy 1
 
     while true ; do 
-        input_print "Enter the name of the block device for the installation (sdX or nvmeYn1) . . . ."
-        read device
+        input_print "Enter the name of the block device for the installation (sdX or nvmeYn1) . . . .  "
+        read -r device
 
-        lsblk -l | grep -c "$device" | read count_device
-        if [ $count_device != "0" ] ; then
-            info_print "Arch Linux will be installed on $device by this script . . . ."
+        lsblk -d | grep -c "$device" | read -r count_device
+        if [ "$count_device" != "0" ] ; then
+            info_print "Arch Linux will be installed on $device . . . ."
             sleepy 2
             break 
         else
             error_print "$device does not appear to be a recognized block device; try again . . . ."
-            sleepy 2
+            sleepy 1
         fi
     done
 
@@ -254,16 +249,19 @@ user_input() {
         rootdev="${device}2"
     fi
 
+    clear
+
     # Enter hostname for the computer
-    input_print "Enter a hostname for this computer . . . ."
-    read hostname
+    input_print "Enter a hostname for this computer . . . .  "
+    read -r hostname
     sleepy 1
 
-    # Enter main user name
-    input_print "Enter a username for the main non-root user . . . ."
-    read username
+    clear
 
-    sleepy 3
+    # Enter main user name
+    input_print "Enter a username for the main non-root user . . . .  "
+    read -r username
+    sleepy 1
 }
 
 
@@ -299,20 +297,26 @@ part_disk() {
     
      # If $device is an nvme device, check status of its logical sector size
     if [ "${device::4}" == "nvme" ] ; then
-        nvme id-ns -H /dev/nvmeYn1 | grep "Relative Performance"
-        input_print "Is the 'in use' format labeled as 'Best' [y/N]    "
+        info_print "Checking available logical sector size options for $device . . . ."
+        nvme id-ns -H "/dev/$device" | grep "Relative Performance"
+        input_print "Is the 'in use' format labeled as 'Best' [y/N] . . . .  "
         read -r nvme_response
         if ! [[ "${nvme_response,,}" =~ ^(yes|y)$ ]]; then
             input_print "To format $device, enter the number shown after 'LBA Format' associated with 'Best' performance    "
-            read lba_number
-            nvme format --lbaf=$lba_number --force /dev/$device
+            read -r lba_number
+            info_print "Formatting $device to new logical sector size . . . ."
+            sleepy 1
+            nvme format --lbaf="$lba_number" --force "/dev/$device"
+            sleepy 3
         fi
     fi
 
-    input_print "This operation will wipe and delete $device  ....  Do you agree to proceed [y/N]   "
+    clear
+
+    input_print "This operation will wipe and delete $device.  Do you agree to proceed [y/N] . . . .  "
     read -r disk_response
     if ! [[ "${disk_response,,}" =~ ^(yes|y)$ ]] ; then
-        error_print "Quitting."
+        error_print "Quitting . . . ."
         sleepy 1
         error_print "Nice job breaking it. Hero."
         exit
@@ -370,13 +374,13 @@ install_base() {
 
     # Pacstrap install the base system
     info_print "Beginning install of the base system packages . . . ."
-    sleepy 2
+    sleepy 1
     info_print "An $cpu CPU has been detected; the $cpu microcode will be installed."
     sleepy 2
     pacstrap -K /mnt "${base_system[@]}"
     info_print "Base system installed . . . ."
 
-    sleepy 5
+    sleepy 3
 }
 
 
@@ -405,7 +409,7 @@ set_locale() {
     clear
     
     info_print "Setting locale to $locale . . . ."
-    arch-chroot /mnt sed -i "s/#$locale/$locale/" /etc/locale.gen
+    sed -i "s/#$locale/$locale/" /mnt/etc/locale.gen
     arch-chroot /mnt locale-gen
     echo "LANG=$locale" > /mnt/etc/locale.conf
     sleepy 2
@@ -413,6 +417,7 @@ set_locale() {
     info_print "Configuring vconsole . . . ."
     echo "KEYMAP=$keymap" > /mnt/etc/vconsole.conf
     echo "FONT=$font" >> /mnt/etc/vconsole.conf
+    
     sleepy 3
 }
 
@@ -446,6 +451,7 @@ EOF
         
     info_print "Enabling NetworkManager service . . . ."
     arch-chroot /mnt systemctl enable NetworkManager
+
     sleepy 3
 }
 
@@ -476,7 +482,7 @@ title Arch Linux
 linux /vmlinuz-linux
 initrd /$microcode_img
 initrd /initramfs-linux.img
-options zswap.enabled=0 rw quiet
+options rootfstype=ext4 zswap.enabled=0 rw quiet
 EOF
 
 cat > /mnt/boot/loader/entries/arch-linux-fallback.conf <<EOF
@@ -484,7 +490,7 @@ title Arch Linux (fallback)
 linux /vmlinuz-linux
 initrd /$microcode_img
 initrd /initramfs-linux-fallback.img
-options zswap.enabled=0 rw quiet
+options rootfstype=ext4 zswap.enabled=0 rw quiet
 EOF
 
 cat > /mnt/boot/loader/entries/arch-linux-lts.conf <<EOF
@@ -492,9 +498,8 @@ title Arch Linux LTS
 linux /vmlinuz-linux-lts
 initrd /$microcode_img
 initrd /initramfs-linux-lts.img
-options zswap.enabled=0 rw quiet
+options rootfstype=ext4 zswap.enabled=0 rw quiet
 EOF
-
 
     sleepy 3
 }
@@ -515,7 +520,7 @@ pacman_config() {
     sed -i 's/#Color/Color/' /mnt/etc/pacman.conf
     sed -i 's/#VerbosePkgLists/VerbosePkgLists/' /mnt/etc/pacman.conf
     sed -i 's/#ParallelDownloads = 5/ParallelDownloads = 5/' /mnt/etc/pacman.conf
-    sed -i '/#\[multilib\]/a \Include = etc/pacman.d/mirrorlist' /mnt/etc/pacman.conf
+    sed -i '/#\[multilib\]/a \Include = /etc/pacman.d/mirrorlist' /mnt/etc/pacman.conf
     sed -i 's/#\[multilib\]/\[multilib\]/' /mnt/etc/pacman.conf
 
     sleepy 3
@@ -533,7 +538,7 @@ install_display() {
     if [ "$gpu" == "AMD" ] ; then
         info_print "Installing display drivers for an AMD GPU . . . ."
         sleepy 2
-        arch-chroot /mnt pacman -S --needed --noconfirm "${amd_graphics[@]}" 
+        arch-chroot /mnt pacman -S --needed --noconfirm "${amd_graphics[@]}"     
         arch-chroot /mnt pacman -S --needed --noconfirm "${amd_graphics_multilib[@]}"
     elif [ "$gpu" == "Intel" ] ; then
         info_print "Installing display drivers for an Intel GPU . . . ."
@@ -554,23 +559,22 @@ install_display() {
 # ------------------------------------------------------------------------------
 
 # Installs any necessary audio firmware and installs the pipewire packages
-# The pipewire systemd services will be enabled manually be the user after completion of this script
 install_audio() {
     clear
     
-    awk '{print $1}' /proc/modules | grep -c snd_sof | read count_mod
-    if [ $count_mod != "0" ] ; then 
+    awk '{print $1}' /proc/modules | grep -c snd_sof | read -r count_mod
+    if [ "$count_mod" != "0" ] ; then 
         info_print "The sof-firmware package is required for your system. Installing now . . . ."
-        sleepy 2
+        sleepy 1
         arch-chroot /mnt pacman -S --needed --noconfirm sof-firmware
     fi
     sleepy 2
 
     for x in "${alsa_array[@]}" ; do
-        awk '{print $1}' /proc/modules | grep -c "$x" | read count_mod2
-        if [ $count_mod2 != "0" ] ; then
+        awk '{print $1}' /proc/modules | grep -c "$x" | read -r count_mod2
+        if [ "$count_mod2" != "0" ] ; then
             info_print "The alsa-firmware package is required for your system. Installing now . . . ."
-            sleepy 2
+            sleepy 1
             arch-chroot /mnt pacman -S --needed --noconfirm alsa-firmware
             sleepy 2
             break 
@@ -582,29 +586,6 @@ install_audio() {
     sleepy 2
     arch-chroot /mnt  pacman -S --needed --noconfirm "${pipewire_pkgs[@]}"
     sleepy 3
-}
-
-
-# ------------------------------------------------------------------------------
-# AUR Helper Installation Function
-# ------------------------------------------------------------------------------
-
-# Installs the preferred AUR Helper
-install_aur() {
-    clear
-
-    info_print "Installing AUR helper ($aurhelper) . . . ."
-    arch-chroot /mnt git clone "https://aur.archlinux.org/$aurhelper-bin.git"
-    arch-chroot /mnt/"$aurhelper-bin" makepkg --noconfirm -si
-    arch-chroot /mnt rm -rf "$aurhelper-bin"     
-    sleepy 3
-
-    clear
-    
-    info_print "Installing AUR packages . . . ."
-    sleepy 2
-    arch-chroot /mnt $aurhelper -S --needed --noconfirm "${aur_pkgs[@]}"
-    sleepy 3     
 }
 
 
@@ -646,12 +627,13 @@ EOF
 misc_config() {
     clear
 
-    info_print "Configuring lograte.conf . . . ."
-    arch-chroot /mnt sed -i 's/#compress/compress/' /etc/logrotate.conf
+    info_print "Configuring logrotate.conf . . . ."
+    sed -i 's/#compress/compress/' /mnt/etc/logrotate.conf
     sleepy 2
 
     info_print "Configuring nsswitch.conf . . . ."
-    arch-chroot /mnt sed -i 's/mymachines/mymachines mdns_minimal [NOTFOUND=return]/g' /etc/nsswitch.conf
+    sed -i 's/mymachines/mymachines mdns_minimal [NOTFOUND=return]/' /mnt/etc/nsswitch.conf
+    
     sleepy 3
 }
 
@@ -666,7 +648,7 @@ mkinit_config() {
     
     info_print "Configuring mkinitcpio . . . ."
     cp /mnt/etc/mkinitcpio.conf /mnt/etc/mkinitcpio.conf.bak
-    arch-chroot /mnt sed -i "s/$hooks_old/$hooks_new/" /etc/mkinitcpio.conf
+    sed -i "s/$hooks_old/$hooks_new/" /mnt/etc/mkinitcpio.conf
     sleepy 2
 
     info_print "Regenerating initramfs files . . . ."
@@ -697,7 +679,7 @@ main_user() {
     arch-chroot /mnt useradd -m -G wheel "$username"
     sleepy 2
     
-    input_print "Set the user password for $username . . . ."
+    info_print "Set the user password for $username . . . ."
     arch-chroot /mnt passwd "$username"
     
     sleepy 3
@@ -712,18 +694,22 @@ main_user() {
 enable_services() {
     clear
 
-    info_print "Enabling avahi, bluetooth, cups, firewalld, and timesyncd services . . . ."
+    arch-chroot /mnt systemctl daemon-reload
+
+    info_print "Starting zram service . . . ."
+    arch-chroot /mnt systemctl start /dev/zram0
+
+    info_print "Enabling system services . . . ."
     arch-chroot /mnt systemctl enable "${arch_services[@]}"
     sleepy 2
 
-    info_print "Enabling archlinux-keyring, fstrim, and logrotate timers . . . ."
+    info_print "Enabling system timers . . . ."
     arch-chroot /mnt systemctl enable "${arch_timers[@]}"
-    sleepy 3
-
-    info_print "Enabling pipewire services . . . ."
-    arch-chroot /mnt systemctl --user -M $username@ enable pipewire.socket pipewire-pulse.socket wireplumber
     sleepy 2
 
+    info_print "Enabling pipewire services . . . ."
+    arch-chroot /mnt systemctl --user -M "$username"@ enable pipewire.socket pipewire-pulse.socket wireplumber
+    sleepy 2
 }
 
 
@@ -735,9 +721,9 @@ clear
 
 # Welcome message
 info_print "Hello and, again, welcome to the Aperture Science computer-aided enrichment center."
-sleepy 1
+sleepy 2
 info_print "Beginning Arch Linux installation . . . ."
-sleepy 3
+sleepy 2
 
 # Check for working internet connection; will exit script if there is no connection
 check_connection
@@ -753,6 +739,12 @@ part_disk
 
 # Format and mount the partitions
 format_mount
+
+# Update mirrorlist
+clear
+info_print "Updating mirrorlist . . . ."
+cp mirrors /etc/pacman.d/mirrorlist
+sleepy 3
 
 # Install base system
 install_base
@@ -792,7 +784,7 @@ sleepy 2
 arch-chroot /mnt pacman -S --needed --noconfirm "${fonts_pkgs[@]}"
 sleepy 3
 
-# Install additional system essential packages and microcode
+# Install additional system essential packages
 clear
 info_print "Installing additional essential system packages . . . ."
 sleepy 2
@@ -819,11 +811,6 @@ sleepy 2
 arch-chroot /mnt pacman -S --needed --noconfirm "${extras_pkgs[@]}"
 sleepy 3
 
-# Install AUR Helper and AUR packages
-if [ -n "$aurhelper" ] ; then
-    install_aur
-fi
-
 # zram configuration
 zram_config
 
@@ -835,7 +822,7 @@ mkinit_config
 
 # Root password
 clear
-input_print "Set the ROOT password . . . ." 
+info_print "Set the ROOT password . . . ." 
 arch-chroot /mnt passwd
 sleepy 1
 
@@ -847,13 +834,12 @@ enable_services
 
 # Finish base install
 clear
-info_print "Installation complete. Rebooting now . . . ."
-sleepy 1
-info_print "The system will automatically shutdown now."
+info_print "Installation complete. The system will automatically shutdown now."
 sleepy 1
 info_print "After shutdown, remove the USB drive, turn on the system, and login as the main user."
 sleepy 1
 info_print "If main user log-in works, it is recommended to disable root password with 'passwd --lock root'"
 sleepy 3
+
 umount -R /mnt
 shutdown now
