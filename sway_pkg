@@ -11,6 +11,7 @@ mousepad
 mpv
 playerctl
 polkit-gnome
+qt5-wayland
 slurp
 sway
 swaybg
